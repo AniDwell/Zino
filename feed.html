@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Complete Profile | Artist Hub</title>
+    
+    <!-- Tailwind Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        electric: '#0052FF',
+                        darkBg: '#000000',
+                        darkSurface: '#0a0a0a'
+                    }
+                }
+            }
+        }
+
+        const theme = localStorage.getItem('theme_preference');
+        if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+</head>
+<body class="bg-white text-gray-900 dark:bg-darkBg dark:text-gray-100 min-h-[100dvh] w-screen flex flex-col items-center transition-colors duration-300 relative overflow-x-hidden">
+
+    <!-- LOADING OVERLAY -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white/90 dark:bg-black/90 backdrop-blur-md hidden items-center justify-center z-[70] transition-opacity duration-300 opacity-0">
+        <div class="flex flex-col items-center">
+            <div class="w-8 h-8 border-[3px] border-gray-200 dark:border-white/10 border-t-electric dark:border-t-white rounded-full animate-spin mb-4"></div>
+            <p id="loading-text" class="text-[10px] tracking-widest uppercase opacity-50 font-bold">Saving Profile...</p>
+        </div>
+    </div>
+
+    <div class="w-full max-w-md relative flex flex-col h-full overflow-y-auto px-6 py-10">
+        
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-1 tracking-tight">Complete Profile</h2>
+            <p class="text-xs opacity-50">Tell the community a bit about yourself.</p>
+        </div>
+
+        <form id="profile-form" class="w-full space-y-8" onsubmit="event.preventDefault(); saveProfile();">
+            
+            <!-- REQUIRED BIO -->
+            <div class="space-y-2">
+                <label class="text-xs font-bold tracking-wider uppercase opacity-70">About You <span class="text-electric dark:text-white">*</span></label>
+                <textarea id="bio" placeholder="Write a short bio..." class="custom-input resize-none" rows="3" required></textarea>
+            </div>
+
+            <div class="h-[1px] w-full bg-gray-200 dark:bg-white/10"></div>
+
+            <!-- OPTIONAL PUBLIC INTRO -->
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold tracking-wider uppercase opacity-70">Public Intro <span class="opacity-50 text-[10px] lowercase normal-case">(Optional)</span></label>
+                    <p class="text-[11px] opacity-50 mt-1 mb-3">Add a featured post or introduction to your profile.</p>
+                </div>
+                
+                <input type="text" id="intro-title" placeholder="Intro Title (e.g., My Art Journey)" class="custom-input">
+                
+                <textarea id="intro-text" placeholder="Write your introduction..." class="custom-input resize-none" rows="4"></textarea>
+
+                <!-- IMAGE UPLOAD -->
+                <div class="w-full">
+                    <input type="file" id="intro-image" accept="image/*" class="hidden" onchange="previewImage(event)">
+                    <div id="image-preview-container" class="w-full h-40 rounded-xl border-2 border-dashed border-gray-300 dark:border-white/20 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors overflow-hidden relative" onclick="document.getElementById('intro-image').click()">
+                        
+                        <div id="upload-prompt" class="flex flex-col items-center pointer-events-none">
+                            <svg class="w-6 h-6 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span class="text-xs font-bold opacity-60">Tap to upload intro image</span>
+                        </div>
+
+                        <img id="image-preview" class="absolute inset-0 w-full h-full object-cover hidden">
+                        
+                        <button type="button" id="remove-img-btn" onclick="removeImage(event)" class="absolute top-2 right-2 bg-black/70 text-white rounded-full p-1.5 hidden z-10 hover:bg-black">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUBMIT BUTTON -->
+            <div class="pt-4 pb-10">
+                <button type="submit" class="w-full bg-electric dark:bg-white hover:opacity-90 text-white dark:text-black text-sm font-bold py-4 rounded-xl transition-all active:scale-95 shadow-lg shadow-electric/20 dark:shadow-white/10">Next</button>
+            </div>
+        </form>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+        import { getFirestore, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+
+        // Your specific config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCANvRaHEUA7wkWMhC9_hFyrzU8cjoUo2U",
+            authDomain: "thuggish-2cd07.firebaseapp.com",
+            projectId: "thuggish-2cd07",
+            storageBucket: "thuggish-2cd07.firebasestorage.app",
+            messagingSenderId: "221865053567",
+            appId: "1:221865053567:web:ad8960c0136ac524269e4a"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const IMGBB_API_KEY = "4a683051e76ed12880a42aefa6ed427b";
+
+        let currentUserUid = null;
+        let selectedIntroImage = null;
+
+        // Ensure user is logged in
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUserUid = user.uid;
+            } else {
+                // Not logged in? Kick them back to login.
+                window.location.replace("index.html");
+            }
+        });
+
+        // UI Helpers
+        const showLoading = (text) => {
+            document.getElementById('loading-text').innerText = text;
+            const overlay = document.getElementById('loading-overlay');
+            overlay.classList.remove('hidden'); overlay.classList.add('flex');
+            setTimeout(() => { overlay.classList.remove('opacity-0'); overlay.classList.add('opacity-100'); }, 10);
+        };
+
+        const hideLoading = () => {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.classList.remove('opacity-100'); overlay.classList.add('opacity-0');
+            setTimeout(() => { overlay.classList.remove('flex'); overlay.classList.add('hidden'); }, 300);
+        };
+
+        // Image Preview Logic
+        window.previewImage = (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                selectedIntroImage = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('upload-prompt').classList.add('hidden');
+                    const imgPreview = document.getElementById('image-preview');
+                    imgPreview.src = e.target.result;
+                    imgPreview.classList.remove('hidden');
+                    document.getElementById('remove-img-btn').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        window.removeImage = (event) => {
+            event.stopPropagation(); // Prevents opening the file picker again
+            selectedIntroImage = null;
+            document.getElementById('intro-image').value = '';
+            document.getElementById('image-preview').classList.add('hidden');
+            document.getElementById('image-preview').src = '';
+            document.getElementById('remove-img-btn').classList.add('hidden');
+            document.getElementById('upload-prompt').classList.remove('hidden');
+        };
+
+        // Save Data Logic
+        window.saveProfile = async () => {
+            if (!currentUserUid) return alert("User not authenticated.");
+
+            const bio = document.getElementById('bio').value.trim();
+            const introTitle = document.getElementById('intro-title').value.trim();
+            const introText = document.getElementById('intro-text').value.trim();
+            
+            let introImageUrl = "";
+
+            showLoading("Uploading Image...");
+
+            try {
+                // 1. Upload Intro Image if one was selected
+                if (selectedIntroImage) {
+                    const formData = new FormData();
+                    formData.append("image", selectedIntroImage);
+                    formData.append("key", IMGBB_API_KEY);
+
+                    const response = await fetch("https://api.imgbb.com/1/upload", {
+                        method: "POST",
+                        body: formData
+                    });
+                    
+                    const imgData = await response.json();
+                    if (imgData.success) {
+                        introImageUrl = imgData.data.url;
+                    } else {
+                        console.error("ImgBB upload failed.");
+                        alert("Failed to upload image. Continuing without it.");
+                    }
+                }
+
+                showLoading("Saving Profile...");
+
+                // 2. Update Firestore Document
+                const userRef = doc(db, "users", currentUserUid);
+                
+                // We use updateDoc to merge this new data with the user data created on the login/register page
+                await updateDoc(userRef, {
+                    bio: bio,
+                    introComplete: true, // A flag to know they finished this step
+                    publicIntro: {
+                        title: introTitle,
+                        text: introText,
+                        imageUrl: introImageUrl
+                    }
+                });
+
+                // 3. Send user to Home
+                window.location.replace("home.html");
+
+            } catch (error) {
+                console.error("Error saving profile:", error);
+                alert("An error occurred while saving your profile. Please try again.");
+                hideLoading();
+            }
+        };
+    </script>
+</body>
+</html>

@@ -3,12 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>zeno</title>
+    <title>Login | Artist Hub</title>
     
+    <!-- Tailwind Play CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Cropper.js -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     
+    <!-- Link to your external stylesheet -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Tailwind Configuration -->
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -22,41 +29,13 @@
                 }
             }
         }
-    </script>
 
-    <script>
-        // Pre-load theme if selected
+        // Theme Preference Loader
         const theme = localStorage.getItem('theme_preference');
         if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         }
     </script>
-
-    <style>
-        .layer-hidden { opacity: 0; pointer-events: none; transform: scale(0.97); position: absolute; z-index: -1; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-        .layer-visible { opacity: 1; pointer-events: auto; transform: scale(1); position: relative; z-index: 10; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-        body { -webkit-tap-highlight-color: transparent; }
-        
-        .custom-input {
-            width: 100%;
-            background: transparent;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            border-radius: 0.75rem;
-            padding: 0.85rem 1rem;
-            font-size: 0.875rem;
-            outline: none;
-            transition: all 0.2s;
-            -webkit-appearance: none;
-        }
-        .dark .custom-input { border-color: rgba(255, 255, 255, 0.1); color: white; }
-        .custom-input:focus { border-color: #0052FF; }
-        .dark .custom-input:focus { border-color: white; }
-
-        .cropper-view-box, .cropper-face { border-radius: 50%; }
-        
-        /* Hide scrollbar for clean UI but allow scrolling */
-        ::-webkit-scrollbar { width: 0px; background: transparent; }
-    </style>
 </head>
 <body class="bg-white text-gray-900 dark:bg-darkBg dark:text-gray-100 h-[100dvh] w-screen flex flex-col items-center transition-colors duration-300 relative overflow-hidden">
 
@@ -245,7 +224,6 @@
                     el.classList.add('layer-hidden');
                 }
             });
-            // Reset scrolling to top on view switch
             document.querySelector('.overflow-y-auto').scrollTop = 0;
         };
 
@@ -374,7 +352,6 @@
             const email = document.getElementById('reg-email').value.trim();
             const password = document.getElementById('reg-password').value;
 
-            // CARDINAL ZUNO LOGIC
             if (age < 15 && username !== "zuno official") {
                 showAlert("Access Denied", "Registration is not permitted. You do not meet the age requirements.");
                 return;

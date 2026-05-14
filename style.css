@@ -1,0 +1,64 @@
+/* style.css */
+
+/* Hide scrollbar for clean UI but allow scrolling */
+::-webkit-scrollbar { 
+    width: 0px; 
+    background: transparent; 
+}
+
+/* Base Body Styles */
+body { 
+    -webkit-tap-highlight-color: transparent; 
+}
+
+/* View Layer Transitions (Login vs Register vs Forgot PW) */
+.layer-hidden { 
+    opacity: 0; 
+    pointer-events: none; 
+    transform: scale(0.97); 
+    position: absolute; 
+    z-index: -1; 
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+}
+
+.layer-visible { 
+    opacity: 1; 
+    pointer-events: auto; 
+    transform: scale(1); 
+    position: relative; 
+    z-index: 10; 
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+}
+
+/* Custom Input Styling */
+.custom-input {
+    width: 100%;
+    background: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 0.75rem;
+    padding: 0.85rem 1rem;
+    font-size: 0.875rem;
+    outline: none;
+    transition: all 0.2s;
+    -webkit-appearance: none;
+}
+
+.custom-input:focus { 
+    border-color: #0052FF; 
+}
+
+/* Dark Mode Input Overrides */
+.dark .custom-input { 
+    border-color: rgba(255, 255, 255, 0.1); 
+    color: white; 
+}
+
+.dark .custom-input:focus { 
+    border-color: white; 
+}
+
+/* Cropper Customization (Makes crop box circular) */
+.cropper-view-box, 
+.cropper-face { 
+    border-radius: 50%; 
+}
