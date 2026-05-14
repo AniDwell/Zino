@@ -7,49 +7,69 @@
     
     <!-- Tailwind Play CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Link to your external stylesheet -->
     <link rel="stylesheet" href="style.css">
 
+    <!-- Tailwind Configuration -->
     <script>
         tailwind.config = {
             darkMode: 'class',
-            theme: { extend: { colors: { electric: '#0052FF', darkBg: '#000000', darkSurface: '#0a0a0a' } } }
+            theme: {
+                extend: {
+                    colors: {
+                        electric: '#0052FF',
+                        darkBg: '#000000',
+                        darkSurface: '#0a0a0a'
+                    }
+                }
+            }
         }
 
+        // Theme Preference Loader
         const theme = localStorage.getItem('theme_preference');
         if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         }
     </script>
 </head>
+<!-- App Layout: Fixed height, flex column, hidden overflow -->
 <body class="bg-gray-50 text-gray-900 dark:bg-darkBg dark:text-gray-100 h-[100dvh] w-screen flex flex-col transition-colors duration-300 relative overflow-hidden">
 
-    <!-- Top Bar Container -->
-    <header id="top-bar-container" class="sticky top-0 z-40 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-white/10"></header>
+    <!-- TOP SEARCH BAR (Fixed at top) -->
+    <header id="top-bar-container" class="z-40 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-white/10 shrink-0"></header>
 
-    <!-- Main Scrollable Area -->
-    <main class="flex-1 overflow-y-auto overflow-x-hidden pb-24 no-scrollbar">
-        <!-- Horizontal List Container -->
+    <!-- MAIN SCROLLABLE AREA -->
+    <!-- flex-1 makes it take up remaining space, overflow-y-auto allows scrolling -->
+    <!-- pb-24 adds padding at the bottom so the feed doesn't hide behind the bottom menu -->
+    <main class="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar pb-24 relative">
+        
+        <!-- Horizontal Active Users List -->
         <section id="list-container" class="w-full py-4 pl-4 border-b border-gray-200 dark:border-white/5"></section>
         
-        <!-- Feed Container -->
-        <section id="feed-container" class="w-full max-w-lg mx-auto flex flex-col gap-6 pt-6 px-4"></section>
+        <!-- Vertical Posts Feed -->
+        <section id="feed-container" class="w-full max-w-lg mx-auto flex flex-col pt-6 px-4"></section>
+        
     </main>
 
-    <!-- Bottom Menu Container -->
-    <nav id="bottom-menu-container" class="fixed bottom-0 w-full z-50 bg-white/90 dark:bg-black/90 backdrop-blur-xl border-t border-gray-200 dark:border-white/10 pb-safe"></nav>
+    <!-- BOTTOM NAVIGATION MENU (Fixed at bottom) -->
+    <nav id="bottom-menu-container" class="absolute bottom-0 w-full z-40 bg-white/90 dark:bg-black/90 backdrop-blur-xl border-t border-gray-200 dark:border-white/10 pb-safe shrink-0"></nav>
 
-    <!-- App Logic & Component Injection -->
+
+    <!-- APP LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
-        // Import your UI Components
+        // Import your UI Components from the js folder
         import { renderSearchBar } from './js/search_bar.js';
         import { renderList } from './js/list.js';
         import { renderFeed } from './js/feed.js';
         import { renderBottomMenu } from './js/bottom_menu.js';
+        import { initSearch } from './js/search.js';
 
+        // Your Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCANvRaHEUA7wkWMhC9_hFyrzU8cjoUo2U",
             authDomain: "thuggish-2cd07.firebaseapp.com",
@@ -59,23 +79,36 @@
             appId: "1:221865053567:web:ad8960c0136ac524269e4a"
         };
 
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Check Auth and Load Data
+        // Check if user is logged in
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // Fetch user data for the top bar profile picture
+                // Fetch the logged-in user's data to get their profile picture for the top bar
                 const userDoc = await getDoc(doc(db, "users", user.uid));
-                const userData = userDoc.exists() ? userDoc.data() : { photoURL: null };
+                const userData = userDoc.exists() ? userDoc.data() : null;
+                const photoURL = userData && userData.photoURL ? userData.photoURL : null;
                 
-                // Initialize UI
-                renderSearchBar('top-bar-container', userData.photoURL);
-                renderList('list-container');
-                renderFeed('feed-container');
+                // 1. Load Top Bar
+                renderSearchBar('top-bar-container', photoURL);
+                
+                // 2. Load Active Users List (passing db so it can query posts)
+                renderList('list-container', db);
+                
+                // 3. Load Main Feed (passing db so it can query posts)
+                renderFeed('feed-container', db);
+                
+                // 4. Load Bottom Navigation
                 renderBottomMenu('bottom-menu-container');
+                
+                // 5. Initialize the invisible Search Overlay
+                initSearch(db);
+
             } else {
+                // If they are not logged in, boot them back to the login page
                 window.location.replace("index.html");
             }
         });
